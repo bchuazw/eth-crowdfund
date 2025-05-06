@@ -199,3 +199,19 @@ progress.progress-bar::-webkit-progress-value {
   margin-bottom: 1rem;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ETH bar */
+.progress-container { /* existing styles */ }
+
+/* TOKEN bar: a bit smaller or different color */
+.progress-container.token {
+  margin-top: 2rem;
+}
+.progress-container.token .progress-bar {
+  /* if you want a different tint: */
+  --fill-color: #ffa500; /* for example orange */
+}
+/* And if you want a different rocket: */
+.progress-container.token .rocket-img {
+  transform: scale(0.8);
+}
