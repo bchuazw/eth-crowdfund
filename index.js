@@ -71,7 +71,7 @@ if (process.env.NODE_ENV === 'production') {
     )
   );
   // all other GETs go to React's index.html
-  app.get('/*', (req, res) => {
+  app.get(/.*/, (req, res) => {
     res.sendFile(
       path.join(__dirname, 'eth-crowdfund-ui', 'build', 'index.html')
     );
