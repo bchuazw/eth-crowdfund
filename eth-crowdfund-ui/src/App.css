@@ -1,0 +1,201 @@
+:root {
+  --primary-start: #4facfe;
+  --primary-end:   #00f2fe;
+  --bg-light:      #eef6ff;
+  --card-bg:       #ffffff;
+  --radius:        1rem;
+  --shadow-light:  rgba(255,255,255,0.8);
+  --shadow-dark:   rgba(0,0,0,0.1);
+  --text-dark:     #2c3e50;
+  --text-medium:   #555;
+  --transition:    0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg-light);
+  background-image:
+    radial-gradient(circle at 10px 10px, rgba(255,255,255,0.3) 1px, transparent 0),
+    radial-gradient(circle at 60px 60px, rgba(255,255,255,0.3) 1px, transparent 0);
+  background-size: 60px 60px;
+  color: var(--text-dark);
+}
+
+/* ── Outer wrapper flanks the card with bears ─────────────────────────── */
+.outer-wrapper {
+  display: flex;
+  justify-content: center; /* center group horizontally */
+  align-items: flex-start;  /* top-align bears + card */
+  gap: 1rem;
+  padding: 2rem 1rem;
+}
+
+/* remove old .bear-row / .bear-container rules */
+
+/* Flanking bears */
+.bear-side img {
+  width: 300px;              /* tweak as desired */
+  height: auto;
+  border-radius: 0.5rem;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+  transition: transform var(--transition);
+}
+.bear-side img:hover {
+  transform: scale(1.05);
+}
+
+/* ── Card centered inside its own wrapper ───────────────────────────── */
+.app-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow:
+    8px 8px 16px var(--shadow-dark),
+   -8px -8px 16px var(--shadow-light);
+  padding: 2rem;
+  max-width: 800px;
+  width: 100%;
+  transition: box-shadow var(--transition);
+}
+.card:hover {
+  box-shadow:
+    12px 12px 24px var(--shadow-dark),
+   -12px -12px 24px var(--shadow-light);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+.header h2 span,
+.header h3 span {
+  color: #1a1a1a;
+}
+
+/* ── Progress + Rocket ───────────────────────────────────────────────── */
+.progress-container {
+  position: relative;
+  margin: 1rem 0 2rem;
+}
+progress.progress-bar {
+  width: 100%;
+  height: 1rem;
+  appearance: none;
+  border-radius: var(--radius);
+  background: #ddd;
+  overflow: hidden;
+}
+progress.progress-bar::-webkit-progress-value {
+  background: linear-gradient(90deg, var(--primary-start), var(--primary-end));
+  width: var(--pct);
+  animation: ripple 2s ease-in-out infinite;
+  transform-origin: left center;
+}
+@keyframes ripple {
+  0%,100% { transform: scaleY(1); }
+  50%     { transform: scaleY(1.2); }
+}
+
+.rocket-container {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: left 1s ease-out;
+  animation: float 2s ease-in-out infinite;
+}
+.rocket-img {
+  width: 3rem;
+}
+@keyframes float {
+  0%,100% { transform: translateY(-50%) scale(1); }
+  50%     { transform: translateY(-48%) scale(1.1); }
+}
+
+/* ── Chart + List Grid ────────────────────────────────────────────────── */
+.content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+.pie-section {
+  height: 320px;
+}
+
+/* ── Contributors List ────────────────────────────────────────────────── */
+.list-section {
+  list-style: none;
+  background: rgba(250,249,255,0.9);
+  border-radius: var(--radius);
+  padding: 1rem;
+  max-height: 320px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+.list-section::-webkit-scrollbar {
+  width: 6px;
+}
+.list-section::-webkit-scrollbar-thumb {
+  background: var(--primary-start);
+  border-radius: 3px;
+}
+.list-section li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+  transition: background var(--transition);
+}
+.list-section li:last-child {
+  border-bottom: none;
+}
+.list-section li:hover {
+  background: rgba(79,172,254,0.1);
+}
+
+.addr-block {
+  display: flex;
+  flex-direction: column;
+}
+.name {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+.address-small {
+  font-size: 0.8rem;
+  color: var(--text-medium);
+  word-break: break-all;
+}
+.amt {
+  font-size: 0.9rem;
+  color: var(--text-medium);
+}
+
+/* ── Loading Spinner ───────────────────────────────────────────────────── */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 4rem;
+}
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 4px solid #ddd;
+  border-top-color: var(--primary-start);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

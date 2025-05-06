@@ -1,0 +1,27 @@
+# Node dependencies
+/node_modules
+/eth-crowdfund-ui/node_modules
+
+# React build output
+/eth-crowdfund-ui/build
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Optional editor files
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
