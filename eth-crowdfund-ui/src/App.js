@@ -1,215 +1,141 @@
-// src/App.js
-
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Pie } from 'react-chartjs-2';
-import 'chart.js/auto';
+import { motion, useMotionValue, animate } from 'framer-motion';
 import './App.css';
 
 export default function App() {
-  const [ethData, setEthData] = useState(null);
-  const [tokData, setTokData] = useState(null);
+  const [maxxPrice, setMaxxPrice] = useState(null);
+  const [prevMaxxPrice, setPrevMaxxPrice] = useState(null);
+  const [claimedMAXX, setClaimedMAXX] = useState(null);
+  const animatedClaimed = useMotionValue(0);
 
-  // map lowercase addresses → friendly names
-  const nameMap = {
-    '0x14eedac0c9cc20bc189cc144908a1221ad048401': 'Turtleneck87',
-    '0x5efd95ced49055f9f2d945a459debfccee33aa54': 'daniel_sats',
-    '0xda17f59941a8548994ba6059eadf555f3497df42': "SAmaz'ng",
-    '0xc2125c2689dcabbcb6afb2cfa84f46e762cb464b': 'Estrid',
-    '0x6e13a1ebf67d41a6f8c951d748c6a27771f6804b': 'taylor3103',
-  };
+  useEffect(() => {
+    const controls = animate(animatedClaimed, claimedMAXX || 0, {
+      duration: 1,
+      ease: 'easeInOut'
+    });
+    return () => controls.stop();
+  }, [claimedMAXX]);
 
-  // fetch ETH & token data
-  const fetchEth = async () => {
+  const fetchMaxxPrice = async () => {
     try {
-      const res = await axios.get('/api/contributions');
-      setEthData(res.data);
+      const res = await axios.get(
+        'https://api.dexscreener.com/latest/dex/pairs/base/0x11bb2563a35b46d4086eec991dd5f374d8122a69e7998da1706454d4ee298148'
+      );
+      const priceRaw = res.data?.pair?.priceUsd;
+      const price = parseFloat(priceRaw);
+      if (!isNaN(price)) {
+        setPrevMaxxPrice(prev => (prev === null ? price : maxxPrice));
+        setMaxxPrice(price);
+      }
     } catch (err) {
-      console.error('Error fetching ETH:', err);
+      console.error('❌ Error fetching MAXX price:', err);
     }
   };
-  const fetchTok = async () => {
+
+  const fetchClaimedMAXX = async () => {
     try {
-      const res = await axios.get('/api/token-collection');
-      setTokData(res.data);
+      const res = await axios.get('http://localhost:4000/api/claimed-maxx');
+      const claimed = parseFloat(res.data?.claimed);
+      if (!isNaN(claimed)) setClaimedMAXX(claimed);
     } catch (err) {
-      console.error('Error fetching tokens:', err);
+      console.error('❌ Error fetching claimed MAXX:', err);
     }
   };
 
   useEffect(() => {
-    fetchEth();
-    fetchTok();
-    const eI = setInterval(fetchEth, 15000);
-    const tI = setInterval(fetchTok, 15000);
-    return () => {
-      clearInterval(eI);
-      clearInterval(tI);
-    };
+    fetchMaxxPrice();
+    fetchClaimedMAXX();
+    const interval = setInterval(() => {
+      fetchMaxxPrice();
+      fetchClaimedMAXX();
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  if (!ethData || !tokData) {
-    return (
-      <div className="loading">
-        <div className="spinner" />
-        <p>Loading…</p>
-      </div>
-    );
-  }
+  const contributors = [
+    { name: 'Turtleneck87', address: '0x14eedac0c9cc20bc189cc144908a1221ad048401', amount: 354.89 },
+    { name: 'daniel_sats', address: '0x5efd95ced49055f9f2d945a459debfccee33aa54', amount: 709.78 },
+    { name: "SAmaz'ng", address: '0xda17f59941a8548994ba6059eadf555f3497df42', amount: 1209.78 },
+    { name: 'taylor3103', address: '0x6e13a1ebf67d41a6f8c951d748c6a27771f6804b', amount: 1419.56 },
+    { name: 'Estrid', address: '0xc2125c2689dcabbcb6afb2cfa84f46e762cb464b', amount: 300 }
+  ];
 
-  // unpack ETH
-  const { totalReceived, target, contributions } = ethData;
-  const ethPct = Math.min((totalReceived / target) * 100, 100);
-
-  // unpack Token ($MAXX)
-  const { collected: tokCollected, goal: tokGoal, contributions: tokContribs } = tokData;
-  const tokPct = Math.min((tokCollected / tokGoal) * 100, 100);
-
-  // prepare chart data
-  const ethLabels  = contributions.map(c => c.address.slice(0,6) + '…');
-  const ethValues  = contributions.map(c => c.percentage);
-
-  const tokLabels  = tokContribs.map(c => c.address.slice(0,6) + '…');
-  const tokValues  = tokContribs.map(c => c.percentage);
+  const totalMAXX = 3984.06;
+  const priceDiff = maxxPrice && prevMaxxPrice ? maxxPrice - prevMaxxPrice : 0;
+  const priceChangePercent = prevMaxxPrice ? (priceDiff / prevMaxxPrice) * 100 : 0;
+  const isUp = priceDiff >= 0;
 
   return (
     <div className="outer-wrapper">
-      {/* left bear */}
       <div className="bear-side">
         <img src="/bear.png" alt="Bear" />
+        <img src="/vines.png" className="vines" alt="Vines" />
       </div>
 
       <div className="app-wrapper">
+        <div className="highlight-metrics">
+          <div className="metric-box">
+            <h3>🎯 Contribution</h3>
+            <p>{totalMAXX.toFixed(2)} MAXX</p>
+          </div>
+          <div className="metric-box">
+            <h3>💰 MAXX Price</h3>
+            <p>
+              ${maxxPrice?.toFixed(4) || '...'}{' '}
+              {prevMaxxPrice && (
+                <span style={{ color: isUp ? 'green' : 'red', fontWeight: 'bold' }}>
+                  {isUp ? '▲' : '▼'} {Math.abs(priceChangePercent).toFixed(2)}%
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="metric-box">
+            <h3>🪙 Claimed</h3>
+            <motion.p>
+              {animatedClaimed.get().toFixed(2)} MAXX
+            </motion.p>
+          </div>
+        </div>
+
+        <div className="current-section">
+          <div className="current-setup">
+            <h3>🧾 Current Setup</h3>
+            <img src="/current.gif" alt="Current Setup" className="current-gif" />
+          </div>
+          <div className="current-stats">
+            <div>Total Hash Rate: 2,829 GH/S</div>
+            <br></br>
+            <div>Total Power: 0.0567%</div>
+            <br></br>
+            <div>Mined per Day: 816 MAXX</div>
+            <br></br>
+            <div>Currently Mined: 27 $MAXX (Placeholder value)</div>
+          </div>
+        </div>
+
         <div className="card">
-          {/* ETH Header */}
-          <div className="header">
-            <h2>🎯 ETH Goal: <span>{target} ETH</span></h2>
-            <h3>🚀 Collected: <span>{totalReceived.toFixed(4)} ETH</span></h3>
-          </div>
-          <div className="progress-container">
-            <div
-              className="rocket-container"
-              style={{ left: `calc(${ethPct}% - 1.5rem)` }}
-            >
-              <img
-                src="/rocket.png"
-                alt="Rocket"
-                className="rocket-img"
-              />
-            </div>
-            <progress
-              className="progress-bar"
-              value={totalReceived}
-              max={target}
-              style={{ '--pct': `${ethPct}%` }}
-            />
-          </div>
-
-          {/* ETH Pie & List */}
-          <div className="content">
-            <div className="pie-section">
-              <Pie
-                data={{
-                  labels: ethLabels,
-                  datasets: [{ data: ethValues }]
-                }}
-                options={{
-                  plugins: {
-                    legend:  { position: 'bottom', labels: { padding: 12 } },
-                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed}%` } }
-                  },
-                  maintainAspectRatio: false
-                }}
-              />
-            </div>
-            <ul className="list-section">
-              {contributions.map(c => {
-                const lc   = c.address.toLowerCase();
-                const name = nameMap[lc];
-                return (
-                  <li key={lc}>
-                    <div className="addr-block">
-                      {name && <span className="name">{name}</span>}
-                      <span className="address-small">
-                        {lc.slice(0,5)}…{lc.slice(-5)}
-                      </span>
-                    </div>
-                    <span className="amt">
-                      {c.amount.toFixed(4)} ETH <em>({c.percentage}%)</em>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {/* $MAXX Header */}
-          <div style={{ marginTop: '40px' }} className="header token">
-            <h2>🎯 $MAXX Goal: <span>{tokGoal}</span></h2>
-            <h3>🚀 Collected: <span>{tokCollected.toFixed(2)}</span></h3>
-          </div>
-          <div className="progress-container token">
-            <div
-              className="rocket-container"
-              style={{ left: `calc(${tokPct}% - 1.5rem)` }}
-            >
-              <img
-                src="/rocket.png"
-                alt="Rocket"
-                className="rocket-img"
-              />
-            </div>
-            <progress
-              className="progress-bar"
-              value={tokCollected}
-              max={tokGoal}
-              style={{ '--pct': `${tokPct}%` }}
-            />
-          </div>
-
-          {/* $MAXX Pie & List */}
-          <div className="content token">
-            <div className="pie-section">
-              <Pie
-                data={{
-                  labels: tokLabels,
-                  datasets: [{ data: tokValues }]
-                }}
-                options={{
-                  plugins: {
-                    legend:  { position: 'bottom', labels: { padding: 12 } },
-                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed}%` } }
-                  },
-                  maintainAspectRatio: false
-                }}
-              />
-            </div>
-            <ul className="list-section">
-              {tokContribs.map(c => {
-                const lc   = c.address.toLowerCase();
-                const name = nameMap[lc];
-                return (
-                  <li key={lc}>
-                    <div className="addr-block">
-                      {name && <span className="name">{name}</span>}
-                      <span className="address-small">
-                        {lc.slice(0,5)}…{lc.slice(-5)}
-                      </span>
-                    </div>
-                    <span className="amt">
-                      {c.amount.toFixed(2)} <em>({c.percentage}%)</em>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          <ul className="list-section">
+            {contributors.map(c => (
+              <li key={c.address}>
+                <div className="addr-block">
+                  <span className="name">{c.name}</span>
+                  <span className="address-small" title={c.address}>
+                    {c.address.slice(0, 5)}...{c.address.slice(-5)}
+                  </span>
+                </div>
+                <span className="amt">
+                  {c.amount.toFixed(2)} MAXX ({((c.amount / totalMAXX) * 100).toFixed(2)}%)
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
-      {/* right bear */}
       <div className="bear-side">
-        <img src="/elephant.png" alt="Bear" />
+        <img src="/elephant.png" alt="Elephant" />
+        <img src="/vines.png" className="vines" alt="Vines" />
       </div>
     </div>
   );

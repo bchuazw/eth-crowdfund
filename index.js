@@ -3,9 +3,11 @@ require('dotenv').config();
 delete process.env.DEBUG;    // ensure DEBUG isn’t picked up by path-to-regexp
 
 const express = require('express');
-const axios   = require('axios');
-const path    = require('path');
-const app     = express();
+const axios = require('axios');
+const path = require('path');
+const app = express();
+const cors = require('cors');
+
 
 const {
   BASESCAN_API_KEY,
@@ -34,6 +36,8 @@ if (!TOKEN_CONTRACT || !TOKEN_GOAL) {
 // helpers
 const weiToEth   = (wei) => Number(wei) / 1e18;
 const rawToToken = (raw, dec) => Number(raw) / Math.pow(10, Number(dec));
+
+app.use(cors());
 
 // ── 1) ETH contributions endpoint ────────────────────────────────────────
 app.get('/api/contributions', async (req, res) => {
@@ -131,7 +135,35 @@ app.get('/api/token-collection', async (req, res) => {
   }
 });
 
-// ── 3) Serve React build in production ─────────────────────────────────
+// ── 3) $MAXX Claimed by Wallet (Ethers) ──────────────────────────────
+const { ethers } = require('ethers');
+
+const provider = new ethers.JsonRpcProvider('https://mainnet.base.org');  // Base mainnet
+
+const CLAIMER_WALLET = '0x1b69ec2F03c21CF7f9a791Be9c01EfBd01F49Ef5';
+const MAXX_TOKEN     = '0xFB7a83abe4F4A4E51c77B92E521390B769ff6467';
+
+const ERC20_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function decimals() view returns (uint8)'
+];
+
+app.get('/api/claimed-maxx', async (req, res) => {
+  try {
+    const token = new ethers.Contract(MAXX_TOKEN, ERC20_ABI, provider);
+    const [rawBalance, decimals] = await Promise.all([
+      token.balanceOf(CLAIMER_WALLET),
+      token.decimals()
+    ]);
+    const claimed = parseFloat(ethers.formatUnits(rawBalance, decimals));
+    res.json({ claimed });
+  } catch (e) {
+    console.error('[/api/claimed-maxx] error:', e.message);
+    res.status(500).json({ claimed: 0 });
+  }
+});
+
+// ── 4) Serve React build in production ─────────────────────────────────
 if (NODE_ENV === 'production') {
   const buildDir = path.join(__dirname, 'eth-crowdfund-ui', 'build');
   app.use(express.static(buildDir));
@@ -140,7 +172,7 @@ if (NODE_ENV === 'production') {
   });
 }
 
-// ── 4) Start server ────────────────────────────────────────────────────
+// ── 5) Start server ────────────────────────────────────────────────────
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Listening on port ${PORT} (${NODE_ENV})`);
 });
