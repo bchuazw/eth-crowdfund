@@ -7,7 +7,7 @@ const axios = require('axios');
 const path = require('path');
 const app = express();
 const cors = require('cors');
-
+const cache = { claimed: 0, timestamp: 0 };
 
 const {
   BASESCAN_API_KEY,
@@ -149,17 +149,57 @@ const ERC20_ABI = [
 ];
 
 app.get('/api/claimed-maxx', async (req, res) => {
+  const now = Date.now();
+  // 1) if cache is fresh (10s), return it immediately
+  if (now - cache.timestamp < 10_000) {
+    return res.json({ claimed: cache.claimed });
+  }
+
+  const token = new ethers.Contract(MAXX_TOKEN, ERC20_ABI, provider);
+  let rawBalance = 0n;
+  let decimals   = 18;
+
+  // 2) helper to retry on rate-limit
+  async function retry(fn, fallback, name) {
+    for (let i = 0; i < 3; i++) {
+      try {
+        return await fn();
+      } catch (err) {
+        const msg = err.info?.error?.message || '';
+        if (msg.includes('over rate limit')) {
+          // wait 500ms × 2^i
+          await new Promise(r => setTimeout(r, 500 * (2 ** i)));
+          continue;
+        }
+        console.error(`${name} failed:`, err);
+        break;
+      }
+    }
+    return fallback;
+  }
+
   try {
-    const token = new ethers.Contract(MAXX_TOKEN, ERC20_ABI, provider);
-    const [rawBalance, decimals] = await Promise.all([
-      token.balanceOf(CLAIMER_WALLET),
-      token.decimals()
-    ]);
+    rawBalance = await retry(
+      () => token.balanceOf(CLAIMER_WALLET),
+      0n,
+      'balanceOf'
+    );
+    decimals = await retry(
+      () => token.decimals(),
+      18,
+      'decimals'
+    );
+
     const claimed = parseFloat(ethers.formatUnits(rawBalance, decimals));
-    res.json({ claimed });
-  } catch (e) {
-    console.error('[/api/claimed-maxx] error:', e.message);
-    res.status(500).json({ claimed: 0 });
+
+    // 3) cache and return
+    cache.claimed   = claimed;
+    cache.timestamp = Date.now();
+    return res.json({ claimed });
+  } catch (err) {
+    console.error('[/api/claimed-maxx] unexpected error:', err);
+    // return stale cache or zero
+    return res.json({ claimed: cache.claimed });
   }
 });
 

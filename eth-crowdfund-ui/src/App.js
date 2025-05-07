@@ -20,7 +20,7 @@ export default function App() {
       ease: 'easeInOut',
       onUpdate(v) { setPowerDisplay(v); },
     });
-  }, [powerPercent]);
+  }, [powerPercent, powerMotion]);
 
   // Animate Mined per Day
   const perDayMotion = useMotionValue(Number(minedPerDay));
@@ -31,7 +31,7 @@ export default function App() {
       ease: 'easeInOut',
       onUpdate(v) { setPerDayDisplay(v); },
     });
-  }, [minedPerDay]);
+  }, [minedPerDay, perDayMotion]);
 
   // Continuous “Currently Mined” counter
   const [baseMined, setBaseMined]   = useState(() => parseFloat(currentlyMined));
@@ -84,7 +84,7 @@ export default function App() {
       }
       return () => ctrl.stop();
     }
-  }, [maxxPrice]);
+  }, [maxxPrice, animatedPrice]);
 
   // Claimed animation
   const animatedClaimed = useMotionValue(0);
@@ -97,7 +97,7 @@ export default function App() {
     if (claimedMAXX != null) {
       animate(animatedClaimed, claimedMAXX, { duration: 1, ease: 'easeInOut' });
     }
-  }, [claimedMAXX]);
+  }, [claimedMAXX, animatedClaimed]);
 
   // Fetch price & claimed every 5s
   useEffect(() => {
