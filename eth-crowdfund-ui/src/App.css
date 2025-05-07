@@ -206,3 +206,28 @@ canvas {
 .glow-down {
   animation: glowDown 0.5s ease-in-out;
 }
+
+.outer-wrapper {
+  position: relative; /* so child .corner-image can be absolute within it */
+}
+
+/* common style for both corners */
+.corner-image {
+  position: absolute;
+  width: 100px; 
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* bottom-left corner */
+.corner-image.bottom-left {
+  bottom: 30px;      
+  left:   40px;
+}
+
+/* bottom-right corner */
+.corner-image.bottom-right {
+  bottom: 30px;
+  right:  40px;
+}

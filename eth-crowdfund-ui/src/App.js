@@ -145,7 +145,7 @@ export default function App() {
   return (
     <div className="outer-wrapper">
       <div className="bear-side">
-        <img src="/bear.png" alt="Bear" />
+        <img src="/lion2.png" alt="Lion" />
         <img src="/vines.png" className="vines" alt="Vines" />
       </div>
 
@@ -215,9 +215,13 @@ export default function App() {
       </div>
 
       <div className="bear-side">
-        <img src="/elephant.png" alt="Elephant" />
+        <img src="/croc.png" alt="Crocodile" />
         <img src="/vines.png" className="vines" alt="Vines" />
       </div>
+        {/* bottom-left polar */}
+        <img src="/polar.png"  className="corner-image bottom-left"  alt="Polar" />
+        {/* bottom-right rhino */}
+        <img src="/rhino.png"  className="corner-image bottom-right" alt="Rhino" />
     </div>
   );
 }
