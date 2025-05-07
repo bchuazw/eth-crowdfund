@@ -187,3 +187,22 @@ canvas {
   line-height: 1.8;
 }
 
+@keyframes glowUp {
+  0% { box-shadow: 0 0 0px transparent; }
+  50% { box-shadow: 0 0 25px #a4ffbf; }
+  100% { box-shadow: 0 0 0px transparent; }
+}
+
+@keyframes glowDown {
+  0% { box-shadow: 0 0 0px transparent; }
+  50% { box-shadow: 0 0 25px #ffb3b3; }
+  100% { box-shadow: 0 0 0px transparent; }
+}
+
+.glow-up {
+  animation: glowUp 0.5s ease-in-out;
+}
+
+.glow-down {
+  animation: glowDown 0.5s ease-in-out;
+}

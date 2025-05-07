@@ -1,21 +1,58 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { motion, useMotionValue, animate } from 'framer-motion';
 import './App.css';
 
 export default function App() {
   const [maxxPrice, setMaxxPrice] = useState(null);
-  const [prevMaxxPrice, setPrevMaxxPrice] = useState(null);
   const [claimedMAXX, setClaimedMAXX] = useState(null);
+  const [glowClass, setGlowClass] = useState(''); // glow class for price
+
   const animatedClaimed = useMotionValue(0);
+  const animatedPrice = useMotionValue(0);
+
+  const [animatedPriceDisplay, setAnimatedPriceDisplay] = useState(0);
+  const [changePercentDisplay, setChangePercentDisplay] = useState(null);
+  const [changeDirectionUp, setChangeDirectionUp] = useState(true);
+
+  const priceRef = useRef({ prev: null, current: null });
 
   useEffect(() => {
-    const controls = animate(animatedClaimed, claimedMAXX || 0, {
-      duration: 1,
-      ease: 'easeInOut'
-    });
-    return () => controls.stop();
+    if (claimedMAXX !== null) {
+      animatedClaimed.set(claimedMAXX);
+      const controls = animate(animatedClaimed, claimedMAXX, {
+        duration: 1,
+        ease: 'easeInOut',
+      });
+      return () => controls.stop();
+    }
   }, [claimedMAXX]);
+
+  useEffect(() => {
+    if (maxxPrice !== null) {
+      animate(animatedPrice, maxxPrice, {
+        duration: 0.5,
+        ease: 'easeInOut',
+        onUpdate: latest => {
+          setAnimatedPriceDisplay(latest);
+        }
+      });
+
+      const prev = priceRef.current.prev;
+      const curr = priceRef.current.current;
+
+      if (prev !== null && curr !== null && prev !== curr) {
+        const diff = curr - prev;
+        const percent = (diff / prev) * 100;
+        setChangePercentDisplay(Math.abs(percent));
+        setChangeDirectionUp(diff >= 0);
+
+        // Trigger glow effect
+        setGlowClass(diff >= 0 ? 'glow-up' : 'glow-down');
+        setTimeout(() => setGlowClass(''), 500);
+      }
+    }
+  }, [maxxPrice]);
 
   const fetchMaxxPrice = async () => {
     try {
@@ -24,8 +61,12 @@ export default function App() {
       );
       const priceRaw = res.data?.pair?.priceUsd;
       const price = parseFloat(priceRaw);
+
       if (!isNaN(price)) {
-        setPrevMaxxPrice(prev => (prev === null ? price : maxxPrice));
+        if (priceRef.current.current !== null && price !== priceRef.current.current) {
+          priceRef.current.prev = priceRef.current.current;
+        }
+        priceRef.current.current = price;
         setMaxxPrice(price);
       }
     } catch (err) {
@@ -37,7 +78,10 @@ export default function App() {
     try {
       const res = await axios.get('http://localhost:4000/api/claimed-maxx');
       const claimed = parseFloat(res.data?.claimed);
-      if (!isNaN(claimed)) setClaimedMAXX(claimed);
+      if (!isNaN(claimed)) {
+        animatedClaimed.set(claimed);
+        setClaimedMAXX(claimed);
+      }
     } catch (err) {
       console.error('❌ Error fetching claimed MAXX:', err);
     }
@@ -46,10 +90,12 @@ export default function App() {
   useEffect(() => {
     fetchMaxxPrice();
     fetchClaimedMAXX();
+
     const interval = setInterval(() => {
       fetchMaxxPrice();
       fetchClaimedMAXX();
-    }, 30000);
+    }, 10000); // ✅ 10 seconds confirmed
+
     return () => clearInterval(interval);
   }, []);
 
@@ -62,9 +108,6 @@ export default function App() {
   ];
 
   const totalMAXX = 3984.06;
-  const priceDiff = maxxPrice && prevMaxxPrice ? maxxPrice - prevMaxxPrice : 0;
-  const priceChangePercent = prevMaxxPrice ? (priceDiff / prevMaxxPrice) * 100 : 0;
-  const isUp = priceDiff >= 0;
 
   return (
     <div className="outer-wrapper">
@@ -77,23 +120,29 @@ export default function App() {
         <div className="highlight-metrics">
           <div className="metric-box">
             <h3>🎯 Contribution</h3>
-            <p>{totalMAXX.toFixed(2)} MAXX</p>
+            <p>{totalMAXX.toFixed(2)} $MAXX</p>
           </div>
-          <div className="metric-box">
-            <h3>💰 MAXX Price</h3>
-            <p>
-              ${maxxPrice?.toFixed(4) || '...'}{' '}
-              {prevMaxxPrice && (
-                <span style={{ color: isUp ? 'green' : 'red', fontWeight: 'bold' }}>
-                  {isUp ? '▲' : '▼'} {Math.abs(priceChangePercent).toFixed(2)}%
-                </span>
+          <div className={`metric-box ${glowClass}`}>
+            <h3>💰 $MAXX Price</h3>
+            <motion.p style={{ fontWeight: 'bold' }}>
+              ${animatedPriceDisplay.toFixed(4)}{' '}
+              {changePercentDisplay !== null && (
+                <motion.span
+                  style={{
+                    color: changeDirectionUp ? 'green' : 'red',
+                    fontWeight: 'bold',
+                    marginLeft: '6px',
+                  }}
+                >
+                  {changeDirectionUp ? '▲' : '▼'} {changePercentDisplay.toFixed(2)}%
+                </motion.span>
               )}
-            </p>
+            </motion.p>
           </div>
           <div className="metric-box">
-            <h3>🪙 Claimed</h3>
+            <h3>🏛 Claimed</h3>
             <motion.p>
-              {animatedClaimed.get().toFixed(2)} MAXX
+              {animatedClaimed.get().toFixed(2)} $MAXX
             </motion.p>
           </div>
         </div>
@@ -105,12 +154,12 @@ export default function App() {
           </div>
           <div className="current-stats">
             <div>Total Hash Rate: 2,829 GH/S</div>
-            <br></br>
-            <div>Total Power: 0.0567%</div>
-            <br></br>
-            <div>Mined per Day: 816 MAXX</div>
-            <br></br>
-            <div>Currently Mined: 27 $MAXX (Placeholder value)</div>
+            <br />
+            <div>Total Power: 0.0512%</div>
+            <br />
+            <div>Mined per Day: 737 $MAXX</div>
+            <br />
+            <div>Currently Mined: 0 $MAXX (Placeholder value)</div>
           </div>
         </div>
 
@@ -125,7 +174,7 @@ export default function App() {
                   </span>
                 </div>
                 <span className="amt">
-                  {c.amount.toFixed(2)} MAXX ({((c.amount / totalMAXX) * 100).toFixed(2)}%)
+                  {c.amount.toFixed(2)} $MAXX ({((c.amount / totalMAXX) * 100).toFixed(2)}%)
                 </span>
               </li>
             ))}
