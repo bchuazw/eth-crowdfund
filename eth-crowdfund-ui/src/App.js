@@ -66,6 +66,7 @@ export default function App() {
   const [up, setUp]                      = useState(true);
   const priceRef = useRef({ prev: null, current: null });
 
+  // Price animation
   useEffect(() => {
     if (maxxPrice != null) {
       const ctrl = animate(animatedPrice, maxxPrice, {
@@ -86,18 +87,32 @@ export default function App() {
     }
   }, [maxxPrice, animatedPrice]);
 
-  // Claimed animation
+  // ─── Claimed animation (UPDATED) ─────────────────
   const animatedClaimed = useMotionValue(0);
   const [claimedDisp, setClaimedDisp] = useState(0);
+  const firstClaimRef = useRef(true);            // ← UPDATED: track first render
+
+  // subscribe motion → state
   useEffect(() => {
     const unsub = animatedClaimed.onChange(v => setClaimedDisp(v));
     return unsub;
   }, [animatedClaimed]);
+
+  // on claimedMAXX change: jump straight once, then tween afterwards
   useEffect(() => {
     if (claimedMAXX != null) {
-      animate(animatedClaimed, claimedMAXX, { duration: 1, ease: 'easeInOut' });
+      if (firstClaimRef.current) {
+        animatedClaimed.set(claimedMAXX);        // ← UPDATED: immediate set on first load
+        firstClaimRef.current = false;
+      } else {
+        animate(animatedClaimed, claimedMAXX, {
+          duration: 1,
+          ease: 'easeInOut'
+        });
+      }
     }
   }, [claimedMAXX, animatedClaimed]);
+  // ─────────────────────────────────────────────────
 
   // Fetch price & claimed every 5s
   useEffect(() => {
@@ -131,14 +146,14 @@ export default function App() {
 
   // Leaderboard
   const contributors = [
-    { name: 'Turtleneck87', address: '0x14eedac0c9cc20bc189cc144908a1221ad048401', amount: 354.89 },
-    { name: 'daniel_sats',   address: '0x5efd95ced49055f9f2d945a459debfccee33aa54', amount: 709.78 },
-    { name: "SAmaz'ng",      address: '0xda17f59941a8548994ba6059eadf555f3497df42', amount: 1209.78 },
-    { name: 'taylor3103',    address: '0x6e13a1ebf67d41a6f8c951d748c6a27771f6804b', amount: 1419.56 },
-    { name: 'Estrid',        address: '0xc2125c2689dcabbcb6afb2cfa84f46e762cb464b', amount: 300    },
-    { name: 'Kinneas',       address: FIXED_WALLET,                                     amount: 2210   }
+    { name: 'Turtleneck87',  address: '0x14eedac0c9cc20bc189cc144908a1221ad048401', amount: 899.22  },
+    { name: 'daniel_sats',   address: '0x5efd95ced49055f9f2d945a459debfccee33aa54', amount: 3000.78 },
+    { name: "SAmaz'ng",      address: '0xda17f59941a8548994ba6059eadf555f3497df42', amount: 2982.45 },
+    { name: 'taylor3103',    address: '0x6e13a1ebf67d41a6f8c951d748c6a27771f6804b', amount: 5419.56 },
+    { name: 'Estrid',        address: '0xc2125c2689dcabbcb6afb2cfa84f46e762cb464b', amount: 600     },
+    { name: 'corntall9334',  address: '0x83d0a7ee99ca499c447cab722da02a71aaac6b15', amount: 123.16  },
+    { name: 'Kinneas',       address: FIXED_WALLET,                                 amount: 7250.63 }
   ];
-
   const totalMAXX = contributors.reduce((sum, c) => sum + c.amount, 0);
   const sorted    = [...contributors].sort((a, b) => b.amount - a.amount);
 
@@ -218,10 +233,11 @@ export default function App() {
         <img src="/croc.png" alt="Crocodile" />
         <img src="/vines.png" className="vines" alt="Vines" />
       </div>
-        {/* bottom-left polar */}
-        <img src="/polar.png"  className="corner-image bottom-left"  alt="Polar" />
-        {/* bottom-right rhino */}
-        <img src="/rhino.png"  className="corner-image bottom-right" alt="Rhino" />
+
+      {/* bottom-left polar */}
+      <img src="/polar.png"  className="corner-image bottom-left"  alt="Polar" />
+      {/* bottom-right rhino */}
+      <img src="/rhino.png"  className="corner-image bottom-right" alt="Rhino" />
     </div>
   );
 }
